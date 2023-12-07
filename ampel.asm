@@ -1,45 +1,49 @@
-CSEG    at 0
-    org 0
+ORG 0x00
 
-START_BUTTON_PIN equ P2.0
-TIMER_DELAY equ 1   ; Verzögerung in ms
+MOV P1, #00000000b ; Initialisiere den Ampel-Port
+MOV P2, #00000000b ; Initialisiere den Anzeige-Port
 
-    init:
-        mov TMOD, #1
-        mov TL0, #010h
-        mov TH0, #0FCh
-        setb TR0
-        mov dptr, #ampel_tab
+START:
 
-    haupt:
-        jb START_BUTTON_PIN, start_pressed
-        sjmp haupt
+  CALL PHASE1       ; Rufe Funktion PHASE1 auf: Phase 1: 0000000b
+  CALL PHASE2       ; Rufe Funktion PHASE2 auf: Phase 2: 010101010b
+  CALL PHASE3       ; Rufe Funktion PHASE3 auf: Phase 3: 0000000b
+  CALL PHASE4       ; Rufe Funktion PHASE4 auf: Phase 4: 101010101b
 
-    start_pressed:
-        call wait_for_1ms
+  SJMP START        ; Springe zurück zum Anfang
 
-        movc A, @A+dptr
-        mov P1, A
+PHASE1:
+  MOV P1, #00000000b ; Setze Ampel-Port auf 0000000b
+  MOV P2, #10011111b ; Setze Anzeige-Port auf eine 1
+  ACALL DELAY        ; Rufe DELAY auf
+  RET
 
-        jb START_BUTTON_PIN, haupt
-        sjmp haupt
+PHASE2:
+  MOV P1, #01010101b ; Setze Ampel-Port auf 010101010b
+  MOV P2, #00100101b ; Setze Anzeige-Port auf eine 2
+  ACALL DELAY        ; Rufe DELAY auf
+  RET
 
-    wait_for_1ms:
-        setb TF0            
-        wait_loop:
-            jnb TF0, wait_loop 
-        clr TF0             
-        ret
+PHASE3:
+  MOV P1, #00000000b ; Setze Ampel-Port auf 0000000b
+  MOV P2, #00001101b ; Setze Anzeige-Port auf eine 3
+  ACALL DELAY        ; Rufe DELAY auf
+  RET
 
-    ampel_tab:
-        db  01110011b
-        db  00110101b
-        db  11010110b
-        db  10110100b
-        db  01110011b
-        db  01110101b
-        db  01101110b
-        db  01110100b
-        db  00000000b
+PHASE4:
+  MOV P1, #10101010b ; Setze Ampel-Port auf 101010101b
+  MOV P2, #10011001b ; Setze Anzeige-Port auf eine 4
+  ACALL DELAY        ; Rufe DELAY auf
+  RET
 
-    end
+DELAY:
+  MOV R2, #10        ; Setze den "Zähler" (Wiederholungen) für die Verzögerung
+
+DELAY_LOOP:
+  NOP                ; Keine Operation (Verzögerung)
+  NOP                ; Keine Operation (Verzögerung)
+  NOP                ; Keine Operation (Verzögerung)
+  DJNZ R2, DELAY_LOOP ; Dekrementiere R2 und springe zurück zum Schleifenanfang, wenn R2 nicht null ist
+  RET
+
+END
